@@ -1,6 +1,6 @@
 """
 CS 4422 - PA1: Web Crawler (from scratch) and Text Preprocessing
-NetID: 001032639
+NetID: jpalac21
 
 How to run:
     python crawler.py --seed-urls URL1 URL2 ... --num-pages 5000 [--restrict-domains]
@@ -45,7 +45,7 @@ from nltk.tag import PerceptronTagger
 # Settings
 # ---------------------------------------------------------------------------
 
-NET_ID = "001032639"
+NET_ID = "jpalac21"
 USER_AGENT = f"CS4422-Student-Crawler-{NET_ID}"
 
 MIN_DELAY = 1.0          # at least 1 second between requests to the same domain

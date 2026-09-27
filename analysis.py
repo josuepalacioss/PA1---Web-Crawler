@@ -1,6 +1,6 @@
 """
 CS 4422 - PA1: Analysis for the report
-NetID: 001032639
+NetID: jpalac21
 
 Reads the files made by crawler.py and prints everything the report needs:
     1. Top 5 pages with the most incoming links

@@ -1,7 +1,7 @@
 # CS 4422 PA1 – Web Crawler (from scratch) and Text Preprocessing
 
-NetID: 001032639
-User-Agent: `CS4422-Student-Crawler-001032639`
+NetID: jpalac21
+User-Agent: `CS4422-Student-Crawler-jpalac21`
 
 ## Setup
 
