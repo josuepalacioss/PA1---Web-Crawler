@@ -1,7 +1,7 @@
 # CS 4422 PA1 - Web Crawler (from scratch) and Text Preprocessing
 
 NetID: jpalac21
-User-Agent: `CS4422-Student-Crawler-jpalac21`
+User-Agent: `CS4422-StudentCrawler-jpalac21`
 
 ## Setup
 
@@ -15,7 +15,7 @@ python setup_nltk.py          # downloads stopwords, wordnet, tagger, sentence s
 Quick test first (20 pages, one seed at a time, stay on that site):
 
 ```
-python crawler.py --seed-urls https://www.kennesaw.edu/ccse/ --num-pages 20 --restrict-domains --output-dir test_ksu
+python crawler.py --seed-urls https://www.eecs.mit.edu/     --num-pages 20 --restrict-domains --output-dir test_mit
 python crawler.py --seed-urls https://www.nsf.gov/          --num-pages 20 --restrict-domains --output-dir test_nsf
 python crawler.py --seed-urls https://docs.python.org/3/    --num-pages 20 --restrict-domains --output-dir test_python
 python crawler.py --seed-urls https://www.w3.org/           --num-pages 20 --restrict-domains --output-dir test_w3c
@@ -24,10 +24,11 @@ python crawler.py --seed-urls https://www.w3.org/           --num-pages 20 --res
 Full crawl:
 
 ```
-python crawler.py --seed-urls https://www.kennesaw.edu/ccse/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ --num-pages 5000
+python crawler.py --seed-urls https://www.eecs.mit.edu/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ --num-pages 5000 --restrict-domains --max-pages-per-domain 1500
 ```
 
-Optional: add `--max-pages-per-domain 1500` so no single site can take most of the 5,000 pages.
+Note: I dropped KSU as the .edu seed because its CS pages redirect across three different
+hosts, so I used MIT EECS (https://www.eecs.mit.edu/) instead.
 
 Then the report numbers and plots:
 
