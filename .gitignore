@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+# crawl output is big, I submit these files on D2L instead
+output/
