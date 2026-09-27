@@ -1,4 +1,4 @@
-# CS 4422 PA1 – Web Crawler (from scratch) and Text Preprocessing
+# CS 4422 PA1 - Web Crawler (from scratch) and Text Preprocessing
 
 NetID: jpalac21
 User-Agent: `CS4422-Student-Crawler-jpalac21`
@@ -47,7 +47,7 @@ Press Ctrl+C any time: the crawler stops and still closes the files properly.
 
 | File | What is in it |
 |---|---|
-| `adjacency_list.csv` | `source_url,destination_url` – every outgoing link, with its parent page |
+| `adjacency_list.csv` | `source_url,destination_url` - every outgoing link, with its parent page |
 | `corpus_chunks.json` | JSON array of chunks: `chunk_id`, `parent_page_url`, `chunk_index`, `title`, `processed_title`, `raw_text`, `processed_text`, `word_count` |
 | `pages.csv` | one row per crawled page: url, domain, title, word count, number of out links, number of chunks |
 | `crawl.log` | everything that happened, including every error |
@@ -83,7 +83,7 @@ path. Exact duplicate pages are found by hashing the page text (SHA-256 checksum
 
 **Variable-length semantic chunking.** I remove boilerplate (`nav`, `header`, `footer`,
 `script`, menus, ...) and collect the logical blocks: `<p>`, `<li>`, headings, `<pre>`,
-etc. Blocks are grouped into chunks of about 50–300 words, a heading starts a new chunk,
+etc. Blocks are grouped into chunks of about 50-300 words, a heading starts a new chunk,
 and a very long paragraph is split by sentences (NLTK). I never cut a sentence in half.
 I don't use fixed 200-word windows because BM25 uses `dl / avgdl` with the `b`
 parameter: if all chunks were 200 words, `dl / avgdl` would always be 1 and BM25 could
