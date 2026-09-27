@@ -72,6 +72,23 @@ BLOCKED_DOMAINS = (
     "mail.python.org", "lists.w3.org",
 )
 
+# Some sites are huge, so I only crawl one part of them (path must start with this)
+#   docs.python.org -> only the current Python 3 docs, not /2.7/, /3.12/, /ja/ ...
+#   kennesaw.edu    -> only the College of Computing (CCSE) pages
+DOMAIN_PATH_RULES = {
+    "docs.python.org": "/3/",
+    "kennesaw.edu": "/ccse/",
+}
+
+# Pages I skip on a domain (regex on the path). These are index/search pages
+# with no real text, or pages in other languages (my text processing is English only).
+DOMAIN_SKIP_PATHS = {
+    "docs.python.org": [r"/genindex", r"/py-modindex", r"/search\.html$",
+                        r"/_sources/", r"/_static/"],
+    "w3.org": [r"^/(ja|zh-hans|zh-hant|zh|ko|fr|de|es|pt|pt-br|ru|it|nl|pl|"
+               r"sv|fi|hu|cs|tr|ar|he|el|uk|ro|bg|hr|id|vi|th)/"],
+}
+
 # Links to files that are not web pages
 SKIP_EXTENSIONS = (
     ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".svg", ".ico", ".webp", ".bmp",
@@ -200,6 +217,7 @@ class Website:
         self.busy = False           # a thread is working on this site right now
         self.robots = {}            # robots.txt parser for each host (scheme://netloc)
         self.errors_in_a_row = 0
+        self.pages_saved = 0        # for --max-pages-per-domain
 
     def next_url(self):
         return self.queue.popleft()
@@ -245,8 +263,9 @@ class Frontier:
     """The crawler frontier: every URL I found but have not crawled yet.
     It hands out one website at a time to each thread."""
 
-    def __init__(self, num_pages):
+    def __init__(self, num_pages, max_per_domain=None):
         self.num_pages = num_pages
+        self.max_per_domain = max_per_domain   # None = no limit per domain
         self.sites = {}             # domain -> Website
         self.ready = []             # heap of (next_time, domain) for idle sites with URLs
         self.in_ready = set()
@@ -265,12 +284,16 @@ class Frontier:
             site = self.sites.get(domain)
             if site is None:
                 site = self.sites[domain] = Website(domain)
-            if site.errors_in_a_row >= MAX_ERRORS_PER_SITE or \
+            if site.errors_in_a_row >= MAX_ERRORS_PER_SITE or self.site_is_full(site) or \
                     len(site.queue) >= MAX_QUEUE_PER_SITE:
                 return
             site.queue.append(url)
             self.schedule(site)
             self.lock.notify()
+
+    def site_is_full(self, site):
+        # Per-domain cap, so one big site can't take most of the pages
+        return self.max_per_domain is not None and site.pages_saved >= self.max_per_domain
 
     def schedule(self, site):
         # Put the site back in line if it has URLs and nobody is using it
@@ -319,6 +342,10 @@ class Frontier:
             self.in_flight -= 1
             if saved_page:
                 self.stored += 1
+                site.pages_saved += 1
+                if self.site_is_full(site) and site.queue:
+                    log.info("%s reached its limit of %d pages", site.domain, self.max_per_domain)
+                    site.queue.clear()
             site.busy = False
             if made_request:
                 site.next_time = time.time() + site.delay
@@ -401,11 +428,12 @@ class Storage:
 # ---------------------------------------------------------------------------
 
 class Crawler:
-    def __init__(self, seed_urls, num_pages, restrict_domains, out_dir, threads):
+    def __init__(self, seed_urls, num_pages, restrict_domains, out_dir, threads,
+                 max_per_domain=None):
         self.num_pages = num_pages
         self.restrict_domains = restrict_domains
         self.threads = threads
-        self.frontier = Frontier(num_pages)
+        self.frontier = Frontier(num_pages, max_per_domain)
         self.storage = Storage(out_dir)
         self.text = TextProcessor()
         self.local = threading.local()   # one requests.Session per thread
@@ -446,10 +474,21 @@ class Crawler:
         domain = get_domain(url)
         if self.restrict_domains:
             # Only the exact domains from --seed-urls
-            return domain in self.seed_domains
-        if any(domain == b or domain.endswith("." + b) for b in BLOCKED_DOMAINS):
+            if domain not in self.seed_domains:
+                return False
+        else:
+            if any(domain == b or domain.endswith("." + b) for b in BLOCKED_DOMAINS):
+                return False
+            if not domain.endswith(ALLOWED_TLDS):
+                return False
+        # Per-domain rules: stay inside one folder, skip index/other-language pages
+        prefix = DOMAIN_PATH_RULES.get(domain)
+        if prefix and not parts.path.startswith(prefix):
             return False
-        return domain.endswith(ALLOWED_TLDS)
+        for pattern in DOMAIN_SKIP_PATHS.get(domain, []):
+            if re.search(pattern, parts.path):
+                return False
+        return True
 
     # ----- the main loop (same idea as "A Simple Crawling Thread" slide) -----
 
@@ -550,11 +589,12 @@ class Crawler:
         blocks = self.get_text_blocks(soup)
         page_text = "\n".join(text for _, text in blocks)
         word_count = len(page_text.split())
+        # A page with little or no text is still saved (its links matter for
+        # link analysis), it just gets few or no chunks.
         if word_count == 0:
             self.count("empty")
-            log.info("No text on page: %s", url)
-            return None
-        if self.storage.is_duplicate(page_text):
+            log.info("No text on page (saving it for its links only): %s", url)
+        elif self.storage.is_duplicate(page_text):
             self.count("duplicates")
             log.info("Duplicate content, skipping: %s", url)
             return None
@@ -704,15 +744,17 @@ class Crawler:
             current.append(text)
             size += words
 
-        # What is left at the end: merge it into the last chunk if it is small
+        # What is left at the end:
+        #   - 50+ words: it is its own chunk
+        #   - under 50 words: I add it to the last chunk so no text is lost
+        #     (that chunk can go a little over 300 words)
+        #   - under 50 words and it is the only text on the page: it is the only chunk
         if current:
-            if size < MIN_CHUNK_WORDS and chunks and \
-                    len(chunks[-1].split()) + size <= MAX_CHUNK_WORDS:
+            if size < MIN_CHUNK_WORDS and chunks:
                 chunks[-1] += "\n" + "\n".join(current)
-            elif size >= MIN_CHUNK_WORDS or not chunks:
+            else:
                 flush()
-        # Throw away tiny pieces with almost no content
-        return [c for c in chunks if len(c.split()) >= 10]
+        return chunks
 
     # ----- run -----
 
@@ -758,6 +800,8 @@ def main():
                         help="only crawl the exact domains of the seed URLs")
     parser.add_argument("--output-dir", default="output",
                         help="folder for the output files (default: output)")
+    parser.add_argument("--max-pages-per-domain", type=int, default=None,
+                        help="optional: max pages from any one domain (default: no limit)")
     parser.add_argument("--threads", type=int, default=8,
                         help="number of crawler threads (default 8)")
     args = parser.parse_args()
@@ -775,7 +819,7 @@ def main():
     logging.getLogger("urllib3").setLevel(logging.ERROR)
 
     crawler = Crawler(args.seed_urls, args.num_pages, args.restrict_domains,
-                      args.output_dir, args.threads)
+                      args.output_dir, args.threads, args.max_pages_per_domain)
     crawler.run()
 
 

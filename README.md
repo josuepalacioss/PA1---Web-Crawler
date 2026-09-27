@@ -15,7 +15,7 @@ python setup_nltk.py          # downloads stopwords, wordnet, tagger, sentence s
 Quick test first (20 pages, one seed at a time, stay on that site):
 
 ```
-python crawler.py --seed-urls https://ccse.kennesaw.edu/cs/ --num-pages 20 --restrict-domains --output-dir test_ksu
+python crawler.py --seed-urls https://www.kennesaw.edu/ccse/ --num-pages 20 --restrict-domains --output-dir test_ksu
 python crawler.py --seed-urls https://www.nsf.gov/          --num-pages 20 --restrict-domains --output-dir test_nsf
 python crawler.py --seed-urls https://docs.python.org/3/    --num-pages 20 --restrict-domains --output-dir test_python
 python crawler.py --seed-urls https://www.w3.org/           --num-pages 20 --restrict-domains --output-dir test_w3c
@@ -24,8 +24,10 @@ python crawler.py --seed-urls https://www.w3.org/           --num-pages 20 --res
 Full crawl:
 
 ```
-python crawler.py --seed-urls https://ccse.kennesaw.edu/cs/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ --num-pages 5000
+python crawler.py --seed-urls https://www.kennesaw.edu/ccse/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ --num-pages 5000
 ```
+
+Optional: add `--max-pages-per-domain 1500` so no single site can take most of the 5,000 pages.
 
 Then the report numbers and plots:
 
@@ -38,6 +40,7 @@ python analysis.py --output-dir output --report-dir report
 | `--seed-urls` | one or more start URLs |
 | `--num-pages` | max pages to crawl (default 5000) |
 | `--restrict-domains` | only crawl the exact domains of the seeds. Without it, any `.edu`, `.gov`, `.org` domain is allowed |
+| `--max-pages-per-domain` | optional limit of pages from any one domain (default: no limit) |
 | `--output-dir` | where to save files (default `output`) |
 | `--threads` | number of crawler threads (default 8) |
 
@@ -68,6 +71,14 @@ thread at a time, and after each request it has to wait at least 1 second (or lo
 `<meta name="robots" content="noindex">` are not stored, and `nofollow` pages don't
 add their links to the frontier.
 
+**Per-domain rules.** Some sites are too big or noisy, so I set rules for them at the top of `crawler.py`:
+- `docs.python.org`: only pages under `/3/` (not old versions like `/2.7/` or `/3.12/`), and I skip
+  index pages like `genindex`, `py-modindex` and `search.html`.
+- `www.kennesaw.edu`: only pages under `/ccse/`.
+- `w3.org`: I skip other-language folders like `/ja/` and `/zh-hans/`, because my text processing is English only.
+
+Links to domains I don't crawl are still written to `adjacency_list.csv`, so the link graph is complete.
+
 **Redirects.** I don't let `requests` follow redirects on its own, because that would hit
 the same server again right away. Instead the new URL goes back into the frontier, so it
 gets the 1 second wait and the robots check like any other URL.
@@ -85,6 +96,10 @@ path. Exact duplicate pages are found by hashing the page text (SHA-256 checksum
 `script`, menus, ...) and collect the logical blocks: `<p>`, `<li>`, headings, `<pre>`,
 etc. Blocks are grouped into chunks of about 50-300 words, a heading starts a new chunk,
 and a very long paragraph is split by sentences (NLTK). I never cut a sentence in half.
+A chunk is never under 50 words, except when the whole page has less than 50 words (then
+that text is the page's only chunk). A small piece left at the end of a page is added to
+the last chunk, so that chunk can go a little over 300 words. Pages with little or no
+text are still saved in `pages.csv` and `adjacency_list.csv` for link analysis.
 I don't use fixed 200-word windows because BM25 uses `dl / avgdl` with the `b`
 parameter: if all chunks were 200 words, `dl / avgdl` would always be 1 and BM25 could
 not reward short focused chunks or punish long wordy ones.
