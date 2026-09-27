@@ -46,7 +46,7 @@ from nltk.tag import PerceptronTagger
 # ---------------------------------------------------------------------------
 
 NET_ID = "jpalac21"
-USER_AGENT = f"CS4422-Student-Crawler-{NET_ID}"
+USER_AGENT = f"CS4422-StudentCrawler-{NET_ID}"
 
 MIN_DELAY = 1.0          # at least 1 second between requests to the same domain
 MAX_CRAWL_DELAY = 30.0   # if robots.txt asks for a huge delay, I cap it here
