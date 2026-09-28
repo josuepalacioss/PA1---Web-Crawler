@@ -29,7 +29,6 @@ matplotlib.use("Agg")   # save plots to files, no window needed
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import MaxNLocator
-from nltk.corpus import stopwords
 
 csv.field_size_limit(sys.maxsize)
 
@@ -154,7 +153,6 @@ def main():
     chunks = load_chunks(os.path.join(args.output_dir, "corpus_chunks.json"))
     in_links = count_in_links(os.path.join(args.output_dir, "adjacency_list.csv"))
     crawled = {p["url"] for p in pages}
-    stop_words = set(stopwords.words("english"))
 
     out = []   # lines of the markdown report
     out.append("# PA1 analysis results\n")
@@ -215,11 +213,21 @@ def main():
     out.append(md_table(["Rank r", "Word", "Freq f", "f x r"], rows) + "\n")
 
     # 5. Top 30 words without stopwords (same table style as the lecture)
+    # Here I use processed_text, which is my normalized vocabulary (lowercase,
+    # no punctuation, no stopwords, lemmatized), like the assignment defines it.
     out.append("## 5. Top 30 words (stopwords removed)\n")
-    no_stop = Counter({w: c for w, c in freqs.items()
-                       if w not in stop_words and len(w) > 1})
-    rows = [(i + 1, w, c, f"{c / total:.4f}")
-            for i, (w, c) in enumerate(no_stop.most_common(30))]
+    out.append("Note: this table counts the normalized terms from processed_text "
+               "(lowercase, no punctuation, no stopwords, lemmatized). The Zipf plot "
+               "above uses raw lowercase words WITH stopwords, because stopwords are "
+               "the head of the Zipf curve.\n")
+    vocab = Counter()
+    for c in chunks:
+        vocab.update(c["processed_text"].split())
+    vocab_total = sum(vocab.values())
+    out.append(f"- Normalized vocabulary size |V|: **{len(vocab)}**, "
+               f"total terms: **{vocab_total}**\n")
+    rows = [(i + 1, w, c, f"{c / vocab_total:.4f}")
+            for i, (w, c) in enumerate(vocab.most_common(30))]
     out.append(md_table(["Rank", "Term", "Freq.", "Perc."], rows) + "\n")
 
     # 6. TF-IDF. A "document" here is a whole page = all its processed chunks.
@@ -244,7 +252,14 @@ def main():
         out.append("![Chunk lengths](chunk_lengths.png)\n")
         out.append(f"- min {min(lengths)}, max {max(lengths)}, "
                    f"mean {np.mean(lengths):.1f}, median {np.median(lengths):.0f}, "
-                   f"std {np.std(lengths):.1f} words\n")
+                   f"std {np.std(lengths):.1f} words")
+        n = len(lengths)
+        under = sum(1 for x in lengths if x < 50)
+        middle = sum(1 for x in lengths if 50 <= x <= 300)
+        over = sum(1 for x in lengths if x > 300)
+        out.append(f"- under 50 words: {100 * under / n:.1f}% ({under} chunks)")
+        out.append(f"- 50 to 300 words: {100 * middle / n:.1f}% ({middle} chunks)")
+        out.append(f"- over 300 words: {100 * over / n:.1f}% ({over} chunks)\n")
 
     report = "\n".join(out)
     with open(os.path.join(args.report_dir, "results.md"), "w", encoding="utf-8") as f:
