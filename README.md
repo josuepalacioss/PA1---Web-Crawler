@@ -143,8 +143,4 @@ crawled (the JSON array is written piece by piece).
 - *U.S. National Science Foundation*, www.nsf.gov/. Accessed 27 Sept. 2026.
 - *World Wide Web Consortium (W3C)*, www.w3.org/. Accessed 27 Sept. 2026.
 - *Claude*. Claude Opus 5.5, Anthropic, 2026, claude.ai.
-  - Used to help plan the crawler design, understand concepts where there was confusion, review test results, draft sections of this report, fix grammar mistakes, plan the presentation, improve writing style, and make final revisions.
-- *Claude Code*. Anthropic, 2026, claude.ai/code.
-  - Used to help write, test, and revise `crawler.py` and `analysis.py`.
-
-All code was reviewed, tested, and run by me, and all results come from my own crawl.
+  - -	Used to help plan the crawler design, understand concepts where there was confusion, review test results, draft sections of this report, fix grammar mistakes, plan presentation, improve writing style, and make final revisions. All code was reviewed, tested, and run by me, and all results come from my own crawl.
