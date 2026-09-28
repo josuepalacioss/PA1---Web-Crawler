@@ -1,7 +1,7 @@
 # CS 4422 PA1 - Web Crawler (from scratch) and Text Preprocessing
 
 NetID: jpalac21
-User-Agent: `CS4422-Student-Crawler-jpalac21`
+User-Agent: `CS4422-StudentCrawler-jpalac21`
 
 ## Setup
 
@@ -15,24 +15,35 @@ python setup_nltk.py          # downloads stopwords, wordnet, tagger, sentence s
 Quick test first (20 pages, one seed at a time, stay on that site):
 
 ```
-python crawler.py --seed-urls https://www.kennesaw.edu/ccse/ --num-pages 20 --restrict-domains --output-dir test_ksu
+python crawler.py --seed-urls https://www.eecs.mit.edu/     --num-pages 20 --restrict-domains --output-dir test_mit
 python crawler.py --seed-urls https://www.nsf.gov/          --num-pages 20 --restrict-domains --output-dir test_nsf
 python crawler.py --seed-urls https://docs.python.org/3/    --num-pages 20 --restrict-domains --output-dir test_python
 python crawler.py --seed-urls https://www.w3.org/           --num-pages 20 --restrict-domains --output-dir test_w3c
 ```
 
-Full crawl:
+Full crawl (the run used for the report):
 
 ```
-python crawler.py --seed-urls https://www.kennesaw.edu/ccse/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ --num-pages 5000
+python crawler.py --seed-urls https://www.eecs.mit.edu/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ --num-pages 5000 --restrict-domains --max-pages-per-domain 1700 --output-dir output_run2
 ```
 
-Optional: add `--max-pages-per-domain 1500` so no single site can take most of the 5,000 pages.
+This run saved 5,000 pages in 47.8 minutes. A first run with `--max-pages-per-domain 1500` stopped at
+4,673 pages, because MIT and the Python docs ran out of reachable pages, so I raised the limit to 1,700.
+
+I first planned to use the KSU CS department (`https://ccse.kennesaw.edu/cs/`) as the .edu seed, but
+its pages redirect across three hosts (ccse.kennesaw.edu, www.kennesaw.edu, campus.kennesaw.edu), so the
+crawler refused to follow them and saved 0 pages. I switched to MIT EECS.
 
 Then the report numbers and plots:
 
 ```
-python analysis.py --output-dir output --report-dir report
+python analysis.py --output-dir output_run2 --report-dir report
+```
+
+Short demo (40 pages, plus a fake URL to show a 404 being handled):
+
+```
+python crawler.py --seed-urls https://www.eecs.mit.edu/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ https://www.nsf.gov/this-page-does-not-exist --num-pages 40 --restrict-domains --output-dir demo
 ```
 
 | Option | Meaning |
@@ -46,7 +57,7 @@ python analysis.py --output-dir output --report-dir report
 
 Press Ctrl+C any time: the crawler stops and still closes the files properly.
 
-## Output files (in `output/`)
+## Output files (in the `--output-dir` folder)
 
 | File | What is in it |
 |---|---|
@@ -74,7 +85,7 @@ add their links to the frontier.
 **Per-domain rules.** Some sites are too big or noisy, so I set rules for them at the top of `crawler.py`:
 - `docs.python.org`: only pages under `/3/` (not old versions like `/2.7/` or `/3.12/`), and I skip
   index pages like `genindex`, `py-modindex` and `search.html`.
-- `www.kennesaw.edu`: only pages under `/ccse/`.
+- `www.kennesaw.edu`: only pages under `/ccse/` (left from testing; KSU is not in the final seeds).
 - `w3.org`: I skip other-language folders like `/ja/` and `/zh-hans/`, because my text processing is English only.
 
 Links to domains I don't crawl are still written to `adjacency_list.csv`, so the link graph is complete.
@@ -122,16 +133,18 @@ crawled (the JSON array is written piece by piece).
 2. Top 5 pages by outgoing links
 3. Top 5 longest pages (word count)
 4. Zipf's law log-log plot with the fitted slope (Zipf says about -1) and an `f × r` table
-5. Top 30 words after removing stopwords
+5. Top 30 terms from `processed_text` (normalized: stopwords removed, lemmatized)
 6. TF-IDF top 5 keywords for 5 random pages, with `w = log(1 + tf) × log(|D| / df)`
 
 ## Works Cited
 
-Sources
-•	MIT EECS. Massachusetts Institute of Technology, www.eecs.mit.edu/. Accessed 23 Sept. 2026.
-•	Python 3 Documentation. Python Software Foundation, docs.python.org/3/. Accessed 22 Sept. 2026.
-•	U.S. National Science Foundation, www.nsf.gov/. Accessed 22 Sept. 2026.
-•	World Wide Web Consortium (W3C), www.w3.org/. Accessed 22 Sept. 2026.
-•	Claude. Claude Opus 5.5, Anthropic, 2026, claude.ai.
--	Used to help plan the crawler design, understand concepts where there was confusion, review test results, draft sections of this report, fix grammar mistakes, plan presentation, improve writing style, and make final revisions. All code was reviewed, tested, and run by me, and all results come from my own crawl.
+- *MIT EECS*. Massachusetts Institute of Technology, www.eecs.mit.edu/. Accessed 27 Sept. 2026.
+- *Python 3 Documentation*. Python Software Foundation, docs.python.org/3/. Accessed 27 Sept. 2026.
+- *U.S. National Science Foundation*, www.nsf.gov/. Accessed 27 Sept. 2026.
+- *World Wide Web Consortium (W3C)*, www.w3.org/. Accessed 27 Sept. 2026.
+- *Claude*. Claude Opus 5.5, Anthropic, 2026, claude.ai.
+  - Used to help plan the crawler design, understand concepts where there was confusion, review test results, draft sections of this report, fix grammar mistakes, plan the presentation, improve writing style, and make final revisions.
+- *Claude Code*. Anthropic, 2026, claude.ai/code.
+  - Used to help write, test, and revise `crawler.py` and `analysis.py`.
 
+All code was reviewed, tested, and run by me, and all results come from my own crawl.
