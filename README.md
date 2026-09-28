@@ -1,7 +1,7 @@
 # CS 4422 PA1 - Web Crawler (from scratch) and Text Preprocessing
 
 NetID: jpalac21
-User-Agent: `CS4422-StudentCrawler-jpalac21`
+User-Agent: `CS4422-Student-Crawler-jpalac21`
 
 ## Setup
 
@@ -15,7 +15,7 @@ python setup_nltk.py          # downloads stopwords, wordnet, tagger, sentence s
 Quick test first (20 pages, one seed at a time, stay on that site):
 
 ```
-python crawler.py --seed-urls https://www.eecs.mit.edu/     --num-pages 20 --restrict-domains --output-dir test_mit
+python crawler.py --seed-urls https://www.kennesaw.edu/ccse/ --num-pages 20 --restrict-domains --output-dir test_ksu
 python crawler.py --seed-urls https://www.nsf.gov/          --num-pages 20 --restrict-domains --output-dir test_nsf
 python crawler.py --seed-urls https://docs.python.org/3/    --num-pages 20 --restrict-domains --output-dir test_python
 python crawler.py --seed-urls https://www.w3.org/           --num-pages 20 --restrict-domains --output-dir test_w3c
@@ -24,11 +24,10 @@ python crawler.py --seed-urls https://www.w3.org/           --num-pages 20 --res
 Full crawl:
 
 ```
-python crawler.py --seed-urls https://www.eecs.mit.edu/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ --num-pages 5000 --restrict-domains --max-pages-per-domain 1500
+python crawler.py --seed-urls https://www.kennesaw.edu/ccse/ https://www.nsf.gov/ https://docs.python.org/3/ https://www.w3.org/ --num-pages 5000
 ```
 
-Note: I dropped KSU as the .edu seed because its CS pages redirect across three different
-hosts, so I used MIT EECS (https://www.eecs.mit.edu/) instead.
+Optional: add `--max-pages-per-domain 1500` so no single site can take most of the 5,000 pages.
 
 Then the report numbers and plots:
 
@@ -58,7 +57,7 @@ Press Ctrl+C any time: the crawler stops and still closes the files properly.
 
 `analysis.py` writes `report/results.md`, `report/zipf.png` and `report/chunk_lengths.png`.
 
-## How it works (and which lecture it comes from)
+## How it works
 
 **Frontier and politeness (Web Crawler lecture).** The frontier keeps one queue per
 domain (FIFO, so it is BFS). A thread asks the frontier for the next website that is
@@ -126,7 +125,13 @@ crawled (the JSON array is written piece by piece).
 5. Top 30 words after removing stopwords
 6. TF-IDF top 5 keywords for 5 random pages, with `w = log(1 + tf) × log(|D| / df)`
 
-## AI use
+## Works Cited
 
-Parts of this code were written with help from an AI assistant (Claude Code). I reviewed,
-tested and understand all of it.
+Sources
+•	MIT EECS. Massachusetts Institute of Technology, www.eecs.mit.edu/. Accessed 23 Sept. 2026.
+•	Python 3 Documentation. Python Software Foundation, docs.python.org/3/. Accessed 22 Sept. 2026.
+•	U.S. National Science Foundation, www.nsf.gov/. Accessed 22 Sept. 2026.
+•	World Wide Web Consortium (W3C), www.w3.org/. Accessed 22 Sept. 2026.
+•	Claude. Claude Opus 5.5, Anthropic, 2026, claude.ai.
+-	Used to help plan the crawler design, understand concepts where there was confusion, review test results, draft sections of this report, fix grammar mistakes, plan presentation, improve writing style, and make final revisions. All code was reviewed, tested, and run by me, and all results come from my own crawl.
+
